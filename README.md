@@ -1,40 +1,165 @@
-# TaskNova — Personal Productivity Command Center
 
-A Flask-based task manager with a responsive dark SaaS dashboard and MySQL persistence.
+# TaskNova – AWS Containerized To-Do Application
 
-## Features
-- Create, list, complete/uncomplete, and delete tasks
-- Productivity summary and completion progress
-- MySQL database configuration through environment variables
-- `/health` endpoint for load-balancer/container health checks
-- Docker-ready; intended for Amazon ECR and ECS Fargate
+A containerized Flask-based productivity application deployed on **AWS ECS Fargate** with Amazon RDS MySQL, Amazon ECR, Application Load Balancer, CloudWatch monitoring, and SNS alerts.
 
-## Existing database
-This project expects the existing `tododb.tasks` table:
+## Project Overview
 
-```sql
-CREATE TABLE tasks (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  title VARCHAR(255) NOT NULL,
-  completed BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+TaskNova is a personal productivity application that allows users to create, view, complete, and delete tasks. The application is containerized using Docker and deployed on AWS using a highly available architecture across two Availability Zones.
+
+## Key Features
+
+- Add, view, complete, and delete tasks.
+- Persistent task storage using Amazon RDS MySQL.
+- Flask application with Gunicorn.
+- Docker containerization.
+- Private container image storage using Amazon ECR.
+- ECS Fargate deployment with two tasks.
+- Application Load Balancer for incoming HTTP traffic.
+- AWS Secrets Manager for database credentials.
+- CloudWatch logs and CPU monitoring.
+- SNS email notifications.
+- Version 2 deployment using ECS rolling updates.
+
+## AWS Architecture
+
+```text
+                         Internet
+                            |
+                            v
+                 Application Load Balancer
+                            |
+                 -----------------------
+                 |                     |
+                 v                     v
+          ECS Fargate Task 1     ECS Fargate Task 2
+             (AZ 1)                 (AZ 2)
+                 |                     |
+                 -----------------------
+                            |
+                            v
+                    Amazon RDS MySQL
+                      (Private DB)
+                            
+Additional AWS Services:
+- Amazon ECR: Docker image storage
+- AWS Secrets Manager: Database credentials
+- Amazon CloudWatch: Logs and alarms
+- Amazon SNS: Email notifications
+- NAT Gateway: Outbound internet access
 ```
 
-## Run locally
-1. Create a virtual environment and install packages:
-   `python -m venv .venv`
-   Windows: `.venv\\Scripts\\activate`
-   Linux/macOS: `source .venv/bin/activate`
-   `pip install -r requirements.txt`
-2. Set the environment variables shown in `.env.example` in your terminal. Do not commit real credentials.
-3. Start the app: `python app.py`
-4. Open `http://localhost:5000` and test `http://localhost:5000/health`.
+## AWS Infrastructure
 
-## Build container
-`docker build -t tasknova:1.0 .`
+**Region:** Asia Pacific (Mumbai) – `ap-south-1`
 
-Run with environment variables supplied securely at runtime:
-`docker run --rm -p 5000:5000 -e DB_HOST=... -e DB_PORT=3306 -e DB_USER=... -e DB_PASSWORD=... -e DB_NAME=tododb tasknova:1.0`
+**VPC Configuration**
 
-For ECS, inject the database password from AWS Secrets Manager in the task definition. Never bake credentials into the image or commit them to Git.
+| Component | CIDR |
+|---|---|
+| VPC | 10.0.0.0/16 |
+| Public Subnet 1 | 10.0.1.0/24 |
+| Public Subnet 2 | 10.0.2.0/24 |
+| Private App Subnet 1 | 10.0.11.0/24 |
+| Private App Subnet 2 | 10.0.12.0/24 |
+| Private DB Subnet 1 | 10.0.21.0/24 |
+| Private DB Subnet 2 | 10.0.22.0/24 |
+
+**Networking Components**
+- VPC with six subnets across two Availability Zones.
+- Internet Gateway for public internet access.
+- NAT Gateway for outbound internet access from private application subnets.
+- Separate route tables for public, application, and database subnets.
+- Security groups controlling communication between the ALB, ECS tasks, RDS, and Bastion host.
+
+## Technology Stack
+
+| Technology | Purpose |
+|---|---|
+| Python / Flask | Backend application |
+| HTML / CSS | Frontend |
+| MySQL | Database |
+| Docker | Containerization |
+| Amazon ECR | Container image registry |
+| Amazon ECS Fargate | Container deployment |
+| Application Load Balancer | Traffic distribution |
+| Amazon RDS | Managed database |
+| AWS Secrets Manager | Credential management |
+| CloudWatch | Logs and monitoring |
+| SNS | Email notifications |
+
+## Deployment Process
+
+1. Created a custom VPC and six subnets across two Availability Zones.
+2. Configured Internet Gateway, NAT Gateway, route tables, and security groups.
+3. Created an Amazon RDS MySQL database in private subnets.
+4. Stored database credentials in AWS Secrets Manager.
+5. Developed the Flask application and tested it locally.
+6. Created a Docker image and pushed it to Amazon ECR.
+7. Created an ECS Fargate cluster and task definition.
+8. Deployed two ECS tasks in private application subnets.
+9. Configured an Application Load Balancer and health checks.
+10. Configured CloudWatch logging and CPU alarms.
+11. Created an SNS email subscription for alarm notifications.
+12. Built and deployed V2 using an ECS rolling deployment.
+
+## Docker Commands
+
+Build the Docker image:
+
+```bash
+docker build -t tasknova:1.0 .
+```
+
+Run locally:
+
+```bash
+docker run -p 5000:5000 tasknova:1.0
+```
+
+Build V2:
+
+```bash
+docker build -t tasknova:2.0 .
+```
+
+## Monitoring and Alerts
+
+- CloudWatch log group: `/ecs/tasknova`
+- ECS CPU utilization alarm configured with a 70% threshold.
+- SNS topic: `tasknova-alerts`
+- Email notifications tested successfully.
+
+## Zero-Downtime Deployment
+
+Implemented a V2 release using Amazon ECR and ECS rolling deployment.
+
+- Built and pushed the V2 Docker image.
+- Registered a new ECS task definition revision.
+- Updated the ECS service to use V2.
+- Monitored the deployment and target health.
+- Verified that two tasks were running after deployment.
+- Confirmed the updated application through the ALB.
+
+## Security
+
+- ECS tasks deployed in private application subnets.
+- RDS deployed without public access.
+- Database credentials injected through Secrets Manager.
+- Security groups restrict traffic between application tiers.
+- No database passwords are stored in the source code.
+
+## Future Improvements
+
+- Add HTTPS using AWS Certificate Manager.
+- Configure a custom domain.
+- Add CI/CD automation using GitHub Actions.
+- Add automated database backups and recovery testing.
+
+## Author
+
+**Mohammed Fazil**
+
+GitHub: [mohammedfazilcse-852](https://github.com/mohammedfazilcse-852)
+
+LinkedIn: [Mohammed Fazil](https://www.linkedin.com/in/mohammed-fazil-95a5383a5/)
