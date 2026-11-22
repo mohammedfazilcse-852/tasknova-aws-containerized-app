@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TaskNova V2 — Productivity Command Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <a class="brand" href="{{ url_for('index') }}"><span class="brand-mark">✦</span> tasknova</a>
+      <div class="side-label">WORKSPACE</div>
+      <a class="nav active" href="{{ url_for('index') }}"><span>▦</span> Overview</a>
+      <div class="side-note"><span class="pulse"></span> Your focus, in orbit</div>
+      <div class="sidebar-bottom">
+        <div class="avatar">TN</div>
+        <div><strong>My workspace</strong><small>Personal account</small></div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="crumb">Workspace <span>/</span> Overview</div>
+        <div class="live"><span class="pulse"></span> TASKNOVA V2 — SYSTEMS ONLINE</div>
+      </header>
+
+      <section class="welcome">
+        <div>
+          <p class="eyebrow">TASKNOVA V2 · YOUR PERSONAL COMMAND CENTER</p>
+          <h1>Make today <span>count.</span></h1>
+          <p class="sub">Small steps. Big momentum. Keep your goals moving forward.</p>
+        </div>
+        <div class="date-chip">✦ &nbsp; YOUR PRODUCTIVITY SPACE</div>
+      </section>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="messages">
+            {% for category, message in messages %}
+              <div class="message {{ category }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <section class="stats">
+        <article class="stat-card featured">
+          <div class="stat-top"><span>Total missions</span><span class="stat-icon">◈</span></div>
+          <div class="stat-number">{{ total }}</div><div class="stat-foot">Tasks in your workspace</div>
+        </article>
+        <article class="stat-card">
+          <div class="stat-top"><span>Completed</span><span class="stat-icon green">✓</span></div>
+          <div class="stat-number">{{ completed }}</div><div class="stat-foot">Wins already secured</div>
+        </article>
+        <article class="stat-card">
+          <div class="stat-top"><span>In progress</span><span class="stat-icon orange">◷</span></div>
+          <div class="stat-number">{{ pending }}</div><div class="stat-foot">Ready for your focus</div>
+        </article>
+      </section>
+
+      <section class="content-grid">
+        <div class="panel task-panel">
+          <div class="panel-heading">
+            <div><p class="eyebrow">MISSION CONTROL</p><h2>Your tasks</h2></div>
+            <span class="count-pill">{{ total }} TOTAL</span>
+          </div>
+          <form class="add-form" action="{{ url_for('add_task') }}" method="post">
+            <span class="plus">＋</span>
+            <input name="title" maxlength="255" placeholder="What needs your attention?" required aria-label="New task">
+            <button type="submit">Add task <span>↗</span></button>
+          </form>
+
+          <div class="task-list">
+            {% for task in tasks %}
+              <article class="task-row {% if task.completed %}is-done{% endif %}">
+                <form action="{{ url_for('toggle_task', task_id=task.id) }}" method="post">
+                  <button class="check" type="submit" aria-label="Toggle task completion">{% if task.completed %}✓{% endif %}</button>
+                </form>
+                <div class="task-info">
+                  <div class="task-title">{{ task.title }}</div>
+                  <div class="task-meta"><span class="status-dot"></span>{% if task.completed %}COMPLETED{% else %}IN PROGRESS{% endif %}</div>
+                </div>
+                <form action="{{ url_for('delete_task', task_id=task.id) }}" method="post" onsubmit="return confirm('Delete this task?')">
+                  <button class="delete" type="submit" aria-label="Delete task">×</button>
+                </form>
+              </article>
+            {% else %}
+              <div class="empty">
+                <div class="empty-icon">✧</div>
+                <h3>Your next win starts here</h3>
+                <p>Add your first task above and turn an idea into action.</p>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <aside class="panel progress-panel">
+          <p class="eyebrow">MOMENTUM TRACKER</p>
+          <h2>Your progress</h2>
+          <div class="ring" style="--progress: {{ progress }}%">
+            <div class="ring-inner"><strong>{{ progress }}<small>%</small></strong><span>COMPLETED</span></div>
+          </div>
+          <div class="progress-caption">You're building momentum.</div>
+          <div class="progress-line"><span>Completed tasks</span><strong>{{ completed }} / {{ total }}</strong></div>
+          <div class="bar"><span style="width: {{ progress }}%"></span></div>
+          <div class="tip"><span>✦</span><div><strong>Focus tip</strong><p>Pick one important task and give it your full attention.</p></div></div>
+        </aside>
+      </section>
+      <footer>BUILT FOR FOCUS <span>✦</span> POWERED BY TASKNOVA</footer>
+    </main>
+  </div>
+</body>
+</html>
